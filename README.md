@@ -12,7 +12,7 @@ Flutter 权限管理工具包，用于统一管理应用权限请求逻辑。
 
 * 自动处理权限多种状态（拒绝、永久拒绝、受限、部分访问等）
 * 自动弹出权限说明 Toast（通过 [Toastification] 实现）
-* 日志统一加 `[ZPermissionManager]` 前缀，便于调试和追踪
+* 日志统一加 `[ZPermission]` 前缀，便于调试和追踪
 * 支持 Android 和 iOS 平台
 
 ---
@@ -23,7 +23,7 @@ Flutter 权限管理工具包，用于统一管理应用权限请求逻辑。
 
 ```yaml
 dependencies:
-  z_permission_handler: ^0.0.1
+  z_permission_handler: ^0.0.2
 ```
 
 然后执行：
@@ -39,9 +39,9 @@ flutter pub get
 ### 检查单个权限
 
 ```dart
-bool cameraGranted = await ZPermissionManager.checkAndRequestPermission(
+bool cameraGranted = await ZPermission.checkAndRequestPermission(
   context,
-  permissionItem: PermissionItem(
+  ZPermissionItem: ZPermissionItem(
     title: "相机权限",
     desc: "允许应用访问相机，用于拍摄照片",
     permission: Permission.camera,
@@ -58,16 +58,16 @@ if (cameraGranted) {
 ### 检查多个权限
 
 ```dart
-Map<PermissionItem, bool> permissions =
-    await ZPermissionManager.checkAndRequestPermissions(
+Map<ZPermissionItem, bool> permissions =
+    await ZPermission.checkAndRequestPermissions(
   context,
   permissionItems: [
-    PermissionItem(
+    ZPermissionItem(
       title: "相机权限",
       desc: "允许应用访问相机，用于拍摄照片",
       permission: Permission.camera,
     ),
-    PermissionItem(
+    ZPermissionItem(
       title: "录音权限",
       desc: "允许应用使用麦克风进行录音或语音输入",
       permission: Permission.microphone,

@@ -1,39 +1,94 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# z_permission_handler
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+[![pub package](https://img.shields.io/pub/v/z_permission_handler.svg)](https://pub.dev/packages/z_permission_handler)
+[![Flutter](https://img.shields.io/badge/Flutter-2.18%2B-blue.svg)](https://flutter.dev)
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+Flutter 权限管理工具包，用于统一管理应用权限请求逻辑。
+支持单个或多个权限的检查与请求，并自动展示权限说明 Toast 提示。
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+---
 
-## Features
+## 功能特性
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+* 自动处理权限多种状态（拒绝、永久拒绝、受限、部分访问等）
+* 自动弹出权限说明 Toast（通过 [Toastification] 实现）
+* 日志统一加 `[ZPermissionManager]` 前缀，便于调试和追踪
+* 支持 Android 和 iOS 平台
 
-## Getting started
+---
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+## 安装
 
-## Usage
+在 `pubspec.yaml` 中添加依赖：
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
+```yaml
+dependencies:
+  z_permission_handler: ^0.0.1
 ```
 
-## Additional information
+然后执行：
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```bash
+flutter pub get
+```
+
+---
+
+## 使用示例
+
+### 检查单个权限
+
+```dart
+bool cameraGranted = await ZPermissionManager.checkAndRequestPermission(
+  context,
+  permissionItem: PermissionItem(
+    title: "相机权限",
+    desc: "允许应用访问相机，用于拍摄照片",
+    permission: Permission.camera,
+  ),
+);
+
+if (cameraGranted) {
+  debugPrint("相机权限已获取 ✅");
+} else {
+  debugPrint("相机权限被拒绝 ❌");
+}
+```
+
+### 检查多个权限
+
+```dart
+Map<PermissionItem, bool> permissions =
+    await ZPermissionManager.checkAndRequestPermissions(
+  context,
+  permissionItems: [
+    PermissionItem(
+      title: "相机权限",
+      desc: "允许应用访问相机，用于拍摄照片",
+      permission: Permission.camera,
+    ),
+    PermissionItem(
+      title: "录音权限",
+      desc: "允许应用使用麦克风进行录音或语音输入",
+      permission: Permission.microphone,
+    ),
+  ],
+);
+
+permissions.forEach((item, granted) {
+  debugPrint("${item.title}: ${granted ? '✅ 已授权' : '❌ 拒绝'}");
+});
+```
+
+---
+
+## 支持平台
+
+* ✅ Android
+* ✅ iOS
+
+---
+
+## License
+
+MIT License，详情见 [LICENSE](LICENSE)。

@@ -1,6 +1,6 @@
 name: z_permission_handler
 description: 一个用于轻松管理和请求应用权限的 Flutter 插件。
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/Jazzzy126/z_permission_handler
 
 environment:

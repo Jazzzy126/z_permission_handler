@@ -12,15 +12,15 @@ import '../z_permission_handler.dart';
 /// 功能特性：
 /// - 自动处理权限的多种状态（拒绝、永久拒绝、受限等）
 /// - 自动弹出权限说明 Toast（通过 [ToastUtil] 实现）
-/// - 日志统一加前缀 `[ZPermissionManager]` 便于过滤与追踪
-class ZPermissionManager {
-  static const String _logTag = "[ZPermissionManager]";
+/// - 日志统一加前缀 `[ZPermission]` 便于过滤与追踪
+class ZPermission {
+  static const String _logTag = "[ZPermission]";
 
   /// 检查并请求单个权限。
   ///
   /// 参数：
   /// - [context]：当前的 [BuildContext]；
-  /// - [permissionItem]：封装了权限、标题和描述信息的 [PermissionItem]。
+  /// - [permissionItem]：封装了权限、标题和描述信息的 [ZPermissionItem]。
   ///
   /// 返回：
   /// - `true`：权限已授权；
@@ -28,9 +28,9 @@ class ZPermissionManager {
   ///
   /// 使用示例：
   /// ```dart
-  /// bool cameraGranted = await ZPermissionManager.checkAndRequestPermission(
+  /// bool cameraGranted = await ZPermission.checkAndRequestPermission(
   ///   context,
-  ///   permissionItem: PermissionItem(
+  ///   permissionItem: ZPermissionItem(
   ///     title: "相机权限",
   ///     desc: "允许应用访问相机，用于拍摄照片",
   ///     permission: Permission.camera,
@@ -45,7 +45,7 @@ class ZPermissionManager {
   /// ```
   static Future<bool> checkAndRequestPermission(
     BuildContext context, {
-    required PermissionItem permissionItem,
+    required ZPermissionItem permissionItem,
   }) async {
     final permission = permissionItem.permission;
     final status = await permission.status;
@@ -112,23 +112,23 @@ class ZPermissionManager {
   ///
   /// 参数：
   /// - [context]：用于展示 Toast 的上下文；
-  /// - [permissionItems]：包含多个 [PermissionItem] 的列表；
+  /// - [permissionItems]：包含多个 [ZPermissionItem] 的列表；
   ///
   /// 返回：
-  /// - `Map<PermissionItem, bool>`：键为权限项，值为授权结果（true/false）。
+  /// - `Map<ZPermissionItem, bool>`：键为权限项，值为授权结果（true/false）。
   ///
   /// 使用示例：
   /// ```dart
-  /// Map<PermissionItem, bool> permissions =
-  ///     await ZPermissionManager.checkAndRequestPermissions(
+  /// Map<ZPermissionItem, bool> permissions =
+  ///     await ZPermission.checkAndRequestPermissions(
   ///   context,
   ///   permissionItems: [
-  ///     PermissionItem(
+  ///     ZPermissionItem(
   ///       title: "相机权限",
   ///       desc: "允许应用访问相机，用于拍摄照片",
   ///       permission: Permission.camera,
   ///     ),
-  ///     PermissionItem(
+  ///     ZPermissionItem(
   ///       title: "录音权限",
   ///       desc: "允许应用使用麦克风进行录音或语音输入",
   ///       permission: Permission.microphone,
@@ -141,11 +141,11 @@ class ZPermissionManager {
   ///   debugPrint("[权限结果] ${item.title}: ${granted ? '✅ 已授权' : '❌ 拒绝'}");
   /// });
   /// ```
-  static Future<Map<PermissionItem, bool>> checkAndRequestPermissions(
+  static Future<Map<ZPermissionItem, bool>> checkAndRequestPermissions(
     BuildContext context, {
-    required List<PermissionItem> permissionItems,
+    required List<ZPermissionItem> permissionItems,
   }) async {
-    final results = <PermissionItem, bool>{};
+    final results = <ZPermissionItem, bool>{};
 
     for (final item in permissionItems) {
       debugPrint("$_logTag 🔍 正在检查权限: ${item.title}");

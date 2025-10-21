@@ -1,6 +1,7 @@
 name: z_permission_handler
 description: "A new Flutter package project."
 version: 0.0.1
+homepage: https://github.com/Jazzzy126/z_permission_handler
 
 environment:
   sdk: ^3.9.2

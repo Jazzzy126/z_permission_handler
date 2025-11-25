@@ -1,6 +1,6 @@
 name: z_permission_handler
 description: 一个用于轻松管理和请求应用权限的 Flutter 插件（纯 Dart 实现）。
-version: 0.0.6
+version: 0.0.7
 homepage: https://github.com/Jazzzy126/z_permission_handler
 
 environment:
@@ -20,5 +20,14 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
-      flutter:
-        pluginClass: null
+      android:
+        package: com.jazzzy126.z_permission_handler
+        pluginClass: ZPermissionHandlerPlugin
+      ios:
+        pluginClass: ZPermissionHandlerPlugin
+      macos:
+        pluginClass: ZPermissionHandlerPlugin
+      windows:
+        pluginClass: ZPermissionHandlerPlugin
+      linux:
+        pluginClass: ZPermissionHandlerPlugin

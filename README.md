@@ -55,7 +55,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // 初始化权限处理器
     final permissionHandler = ZPermissionHandler();
-    
+  
     // 定义权限提示的显示和关闭方法
     permissionHandler.init(
       onShow: (context, item) async {
@@ -87,7 +87,7 @@ class MyApp extends StatelessWidget {
         openAppSettings();
       },
     );
-    
+  
     return MaterialApp(
       title: '权限管理示例',
       home: HomePage(),
@@ -159,7 +159,7 @@ Future<void> requestMultiplePermissions(BuildContext context) async {
     // 处理权限被拒绝的情况
   }
 }
-
+```
 ---
 
 ## 权限状态处理
@@ -188,8 +188,6 @@ Future<void> requestMultiplePermissions(BuildContext context) async {
 3. 当权限被永久拒绝时，需要在 `onPermanentlyDenied` 回调中手动引导用户前往系统设置
 4. 批量请求权限时，会逐个处理每个权限，前一个权限处理完成后才会处理下一个
 5. 权限回调函数支持异步操作，可以在回调中执行弹窗等异步逻辑
-
----
 
 ## License
 

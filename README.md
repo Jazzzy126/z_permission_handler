@@ -11,9 +11,10 @@ Flutter 权限管理工具包，用于统一管理应用权限请求逻辑。
 ## 功能特性
 
 * 采用单例模式设计，全局统一管理权限请求
-* 自动处理权限多种状态（已授予、被拒绝、永久拒绝等）
+* 自动处理权限多种状态（已授予、受限、被拒绝、永久拒绝等）
 * 支持自定义权限说明提示样式（对话框、Toast等）
-* 当权限被永久拒绝时，自动引导用户前往系统设置
+* 支持自定义普通拒绝和永久拒绝的处理逻辑
+* 支持批量权限请求，并返回详细的结果信息
 * 日志统一加 `[ZPermission]` 前缀，便于调试和追踪
 * 支持 Android 和 iOS 平台
 
@@ -25,7 +26,7 @@ Flutter 权限管理工具包，用于统一管理应用权限请求逻辑。
 
 ```yaml
 dependencies:
-  z_permission_handler: ^0.0.4
+  z_permission_handler: ^0.0.10
 ```
 
 然后执行：
@@ -57,7 +58,7 @@ class MyApp extends StatelessWidget {
     
     // 定义权限提示的显示和关闭方法
     permissionHandler.init(
-      onShow: (context, item) {
+      onShow: (context, item) async {
         // 自定义权限提示，例如使用对话框
         showDialog(
           context: context,
@@ -73,13 +74,17 @@ class MyApp extends StatelessWidget {
           ),
         );
       },
-      onClose: (context, item) {
+      onClose: (context, item) async {
         // 关闭权限提示
         Navigator.of(context).pop();
       },
-      onComplete: (context, item, granted) {
-        // 权限请求完成回调
-        print("${item.title} 请求结果: ${granted ? '已授予' : '已拒绝'}");
+      onDenied: (context, item) async {
+        // 普通拒绝处理
+        print("${item.title} 被拒绝");
+      },
+      onPermanentlyDenied: (context, item) async {
+        // 永久拒绝处理，通常引导用户前往设置
+        openAppSettings();
       },
     );
     
@@ -99,7 +104,7 @@ Future<void> requestCameraPermission(BuildContext context) async {
   
   bool granted = await permissionHandler.checkAndRequestPermission(
     context,
-    zPermissionHandlerItem: ZPermissionHandlerItem(
+    item: ZPermissionHandlerItem(
       title: "相机权限",
       desc: "需要访问相机以拍摄照片",
       permission: Permission.camera,
@@ -140,20 +145,20 @@ Future<void> requestMultiplePermissions(BuildContext context) async {
     ),
   ];
   
-  bool allGranted = await permissionHandler.checkAndRequestPermissions(
+  ZPermissionBatchResult result = await permissionHandler.checkAndRequestPermissions(
     context,
     items: permissionItems,
   );
   
-  if (allGranted) {
+  if (result.allGranted) {
     print("所有权限均已获取 ✅");
     // 执行需要权限的操作
   } else {
     print("部分或全部权限被拒绝 ❌");
+    print("被拒绝的权限: ${result.deniedItems.map((item) => item.title).join(', ')}");
     // 处理权限被拒绝的情况
   }
 }
-```
 
 ---
 
@@ -162,8 +167,10 @@ Future<void> requestMultiplePermissions(BuildContext context) async {
 该库会自动处理以下权限状态：
 
 1. **已授予**：直接返回 `true`，不显示提示
-2. **被拒绝**：显示权限提示，然后请求权限
-3. **永久拒绝**：直接打开系统设置页面
+2. **受限**：直接返回 `true`，不显示提示
+3. **永久拒绝**：调用 `onPermanentlyDenied` 回调，不显示提示
+4. **无法申请**：调用 `onDenied` 回调，不显示提示
+5. **其他状态**：显示权限提示，然后请求权限
 
 ---
 
@@ -171,7 +178,6 @@ Future<void> requestMultiplePermissions(BuildContext context) async {
 
 * ✅ Android
 * ✅ iOS
-* ✅ Web
 
 ---
 
@@ -179,7 +185,9 @@ Future<void> requestMultiplePermissions(BuildContext context) async {
 
 1. 必须在使用前调用 `init()` 方法，否则会抛出异常
 2. 确保在 `AndroidManifest.xml` 和 `Info.plist` 中正确配置了所需的权限声明
-3. 当权限被永久拒绝时，用户需要手动在系统设置中开启权限
+3. 当权限被永久拒绝时，需要在 `onPermanentlyDenied` 回调中手动引导用户前往系统设置
+4. 批量请求权限时，会逐个处理每个权限，前一个权限处理完成后才会处理下一个
+5. 权限回调函数支持异步操作，可以在回调中执行弹窗等异步逻辑
 
 ---
 

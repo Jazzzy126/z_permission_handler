@@ -57,7 +57,7 @@ class MyApp extends StatelessWidget {
     
     // 定义权限提示的显示和关闭方法
     permissionHandler.init(
-      show: (context, item) {
+      onShow: (context, item) {
         // 自定义权限提示，例如使用对话框
         showDialog(
           context: context,
@@ -73,9 +73,13 @@ class MyApp extends StatelessWidget {
           ),
         );
       },
-      close: (context, item) {
+      onClose: (context, item) {
         // 关闭权限提示
         Navigator.of(context).pop();
+      },
+      onComplete: (context, item, granted) {
+        // 权限请求完成回调
+        print("${item.title} 请求结果: ${granted ? '已授予' : '已拒绝'}");
       },
     );
     

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// 权限项数据类
+/// 通用权限回调类型
 ///
-/// 包含权限的标题、描述和实际的 [Permission] 对象
+/// 用于所有权限回调，包括显示提示、关闭提示、普通拒绝和永久拒绝。
+/// 回调是异步的，方便弹窗或其他异步操作。
+typedef ZPermissionCallback = Future<void> Function(
+  BuildContext context,
+  ZPermissionHandlerItem item,
+);
+
+/// 单个权限项的数据类
 ///
-/// 使用示例:
-/// ```dart
-/// final item = ZPermissionHandlerItem(
-///   title: "相机权限",
-///   desc: "需要访问相机以拍照",
-///   permission: Permission.camera,
-/// );
-/// ```
+/// 包含权限的标题、描述和实际的 [Permission] 对象。
 class ZPermissionHandlerItem {
   /// 权限标题，用于显示给用户
   final String title;
@@ -20,7 +20,7 @@ class ZPermissionHandlerItem {
   /// 权限描述，用于提示用户为什么需要该权限
   final String desc;
 
-  /// 实际请求的权限
+  /// 实际请求的权限对象
   final Permission permission;
 
   /// 构造方法
@@ -31,158 +31,151 @@ class ZPermissionHandlerItem {
   });
 }
 
-/// 权限管理工具类
+/// 批量权限请求结果
 ///
-/// 提供单例对象，用于全局管理权限请求、提示展示以及关闭逻辑
+/// 用于批量权限请求的返回值，包含是否全部授予以及被拒绝的权限项列表。
+class ZPermissionBatchResult {
+  /// 是否所有权限都被授予
+  final bool allGranted;
+
+  /// 被拒绝的权限项列表
+  final List<ZPermissionHandlerItem> deniedItems;
+
+  /// 构造方法
+  ZPermissionBatchResult({
+    required this.allGranted,
+    required this.deniedItems,
+  });
+}
+
+/// 权限管理器
 ///
-/// 使用示例:
+/// 提供单例对象，用于全局管理权限请求、提示展示以及拒绝处理逻辑。
+///
+/// **使用示例**
 /// ```dart
-/// final permissionHandler = ZPermissionHandler();
-///
-/// // 初始化全局显示/关闭函数
-/// permissionHandler.init(
-///   show: (context, item) {
-///     showDialog(
-///       context: context,
-///       builder: (_) => AlertDialog(
-///         title: Text(item.title),
-///         content: Text(item.desc),
-///         actions: [
-///           TextButton(
-///             onPressed: () => Navigator.of(context).pop(),
-///             child: Text("确定"),
-///           ),
-///         ],
-///       ),
-///     );
+/// ZPermissionHandler().init(
+///   onShow: (context, item) async {
+///     // 弹窗显示权限提示
 ///   },
-///   close: (context, item) {
-///     Navigator.of(context).pop();
+///   onClose: (context, item) async {
+///     // 关闭弹窗
 ///   },
-/// );
-///
-/// // 请求单个权限
-/// bool granted = await permissionHandler.checkAndRequestPermission(
-///   context,
-///   zPermissionHandlerItem: ZPermissionHandlerItem(
-///     title: "相机权限",
-///     desc: "需要访问相机以拍照",
-///     permission: Permission.camera,
-///   ),
-/// );
-///
-/// // 批量请求权限
-/// bool allGranted = await permissionHandler.checkAndRequestPermissions(
-///   context,
-///   items: [
-///     ZPermissionHandlerItem(
-///       title: "存储权限",
-///       desc: "需要访问存储以保存文件",
-///       permission: Permission.storage,
-///     ),
-///     ZPermissionHandlerItem(
-///       title: "相机权限",
-///       desc: "需要访问相机以拍照",
-///       permission: Permission.camera,
-///     ),
-///   ],
+///   onDenied: (context, item) async {
+///     // 普通拒绝处理
+///   },
+///   onPermanentlyDenied: (context, item) async {
+///     // 永久拒绝处理
+///   },
 /// );
 /// ```
 class ZPermissionHandler {
-  /// 单例对象
   static final ZPermissionHandler _instance = ZPermissionHandler._internal();
-
-  /// 工厂构造方法
   factory ZPermissionHandler() => _instance;
-
-  /// 私有构造方法
   ZPermissionHandler._internal();
 
-  /// 全局显示权限提示函数
-  void Function(BuildContext context, ZPermissionHandlerItem item)? _showFunc;
+  /// 权限提示显示回调（必填）
+  late ZPermissionCallback _onShowFunc;
 
-  /// 全局关闭权限提示函数
-  void Function(BuildContext context, ZPermissionHandlerItem item)? _closeFunc;
+  /// 权限提示关闭回调（必填）
+  late ZPermissionCallback _onCloseFunc;
 
-  /// 初始化全局显示/关闭函数
+  /// 普通权限拒绝回调（可选）
+  ZPermissionCallback? _onDeniedFunc;
+
+  /// 永久权限拒绝回调（可选）
+  ZPermissionCallback? _onPermanentlyDeniedFunc;
+
+  /// 初始化全局权限回调
   ///
-  /// 需要在应用启动时调用，否则调用权限请求方法会抛出异常
+  /// 必须在调用 `checkAndRequestPermission` 或 `checkAndRequestPermissions` 之前调用。
+  ///
+  /// 参数说明：
+  /// - [onShow] 显示权限提示（必填）
+  /// - [onClose] 关闭权限提示（必填）
+  /// - [onDenied] 普通拒绝处理（可选）
+  /// - [onPermanentlyDenied] 永久拒绝处理（可选）
   void init({
-    required void Function(BuildContext context, ZPermissionHandlerItem item)
-    show,
-    required void Function(BuildContext context, ZPermissionHandlerItem item)
-    close,
+    required ZPermissionCallback onShow,
+    required ZPermissionCallback onClose,
+    ZPermissionCallback? onDenied,
+    ZPermissionCallback? onPermanentlyDenied,
   }) {
-    debugPrint("[ZPermission] 初始化全局 show/close 函数");
-    _showFunc = show;
-    _closeFunc = close;
+    _onShowFunc = onShow;
+    _onCloseFunc = onClose;
+    _onDeniedFunc = onDenied;
+    _onPermanentlyDeniedFunc = onPermanentlyDenied;
   }
 
-  /// 检查并请求单个权限
+  /// 请求单个权限
   ///
-  /// 如果权限未授予，会调用 [_showFunc] 显示提示，完成后调用 [_closeFunc] 关闭提示。
+  /// 如果权限已授权，直接返回 `true`。
+  /// 如果权限未授权，会调用 [_onShowFunc] 显示提示，完成后调用 [_onCloseFunc] 关闭提示。
+  /// 如果权限被拒绝，会调用 [_onDeniedFunc] 或 [_onPermanentlyDeniedFunc]。
   ///
-  /// 如果权限永久拒绝，会直接打开系统设置。
-  ///
-  /// 返回 `true` 表示权限已授予，`false` 表示未授予。
+  /// 返回值：
+  /// - `true` 表示权限已授予
+  /// - `false` 表示权限未授予
   Future<bool> checkAndRequestPermission(
     BuildContext context, {
-    required ZPermissionHandlerItem zPermissionHandlerItem,
+    required ZPermissionHandlerItem item,
   }) async {
-    if (_showFunc == null || _closeFunc == null) {
-      throw Exception("[ZPermission] 未初始化，请先调用 ZPermission.init()");
-    }
-
-    final permission = zPermissionHandlerItem.permission;
+    final permission = item.permission;
     final status = await permission.status;
-    debugPrint("[ZPermission] 权限状态: $status");
 
-    if (status.isGranted) {
-      debugPrint("[ZPermission] 权限已授权: ${zPermissionHandlerItem.permission}");
-      return true;
-    }
+    debugPrint("🍀 [ZPermission] 当前状态: $status");
 
-    if (status.isDenied) {
-      debugPrint(
-        "[ZPermission] 权限未授权，显示提示: ${zPermissionHandlerItem.permission}",
-      );
-      _showFunc!(context, zPermissionHandlerItem);
+    if (status.isGranted || status.isLimited) return true;
 
-      final result = await permission.request();
-      debugPrint("[ZPermission] 请求权限结果: $result");
-
-      _closeFunc!(context, zPermissionHandlerItem);
-      debugPrint("[ZPermission] 关闭权限提示: ${zPermissionHandlerItem.permission}");
-
-      return result.isGranted;
-    }
-
-    if (status.isPermanentlyDenied) {
-      debugPrint(
-        "[ZPermission] 权限被永久拒绝，打开设置: ${zPermissionHandlerItem.permission}",
-      );
-      openAppSettings();
+    if (status.isRestricted) {
+      debugPrint("🚫 [ZPermission] restricted：权限无法申请");
+      if (_onDeniedFunc != null) await _onDeniedFunc!(context, item);
       return false;
     }
 
-    debugPrint("[ZPermission] 未处理的权限状态: $status");
+    if (status.isPermanentlyDenied) {
+      debugPrint("⚠️ [ZPermission] 权限永久拒绝");
+      if (_onPermanentlyDeniedFunc != null) {
+        await _onPermanentlyDeniedFunc!(context, item);
+      }
+      return false;
+    }
+
+    // 正常流程：显示提示 → 请求权限 → 关闭提示
+    await _onShowFunc(context, item);
+    final result = await permission.request();
+    await _onCloseFunc(context, item);
+
+    if (result.isGranted || result.isLimited) return true;
+
+    if (_onDeniedFunc != null) await _onDeniedFunc!(context, item);
     return false;
   }
 
-  /// 批量检查并请求权限
+  /// 批量请求权限（逐个处理）
   ///
-  /// 遍历 [items]，依次请求每个权限，如果有任何权限未授予，则返回 `false`。
-  Future<bool> checkAndRequestPermissions(
+  /// 遍历 [items]，依次请求每个权限。
+  ///
+  /// 返回值：
+  /// - [ZPermissionBatchResult]：
+  ///   - [allGranted] 表示是否所有权限都已授予
+  ///   - [deniedItems] 被拒绝的权限列表
+  Future<ZPermissionBatchResult> checkAndRequestPermissions(
     BuildContext context, {
     required List<ZPermissionHandlerItem> items,
   }) async {
+    final deniedItems = <ZPermissionHandlerItem>[];
+
     for (final item in items) {
-      final granted = await checkAndRequestPermission(
-        context,
-        zPermissionHandlerItem: item,
-      );
-      if (!granted) return false;
+      final granted = await checkAndRequestPermission(context, item: item);
+      if (!granted) {
+        deniedItems.add(item);
+      }
     }
-    return true;
+
+    return ZPermissionBatchResult(
+      allGranted: deniedItems.isEmpty,
+      deniedItems: deniedItems,
+    );
   }
 }
